@@ -6,6 +6,7 @@
     "express": "3.x",
     "ejs": "*",
     "redis": "*",
+    "url": "*",
     "aws-sdk": "*"
   }
 }

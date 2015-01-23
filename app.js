@@ -42,6 +42,25 @@ var redis = redis_module.createClient(redisURL.port, redisURL.hostname, {no_read
 redis.auth(redisURL.auth.split(":")[1]);
 
 /*
+ * Save the user/post/image data in Redis.
+ */
+function update_account(user_id, user_auth, image_url){
+    var now = new Date().getTime() / 1000;
+
+    var image_id = redis.incr('NextImage');
+    redis.hmset('Image:'+ image_id, 'user', user_id,
+                                    'date', now,
+                                    'url', image_url);
+
+    var post_id = redis.incr('NextPost');
+    redis.hmset('Post:'+ post_id, 'user', user_id,
+                                  'date', now,
+                                  'image', image_id);
+
+    redis.zadd('User:'+ user_id +":Posts", now, url);
+}
+
+/*
  * Respond to GET requests to /account.
  * Upon request, render the 'account.html' web page in views/ directory.
  */
@@ -87,26 +106,11 @@ app.get('/sign_s3', function(req, res){
 app.post('/submit_form', function(req, res){
     username = req.body.username;
     full_name = req.body.full_name;
-    avatar_url = req.body.avatar_url;
+    image_url = req.body.avatar_url;
     update_account(user_id, user_auth, image_url);
     return image_url;
 });
 
-update_account(user_id, user_auth, image_url){
-    var now = new Date().getTime() / 1000;
-
-    var image_id = redis.incr('NextImage');
-    redis.hmset('Image:'+ image_id, 'user', user_id,
-                                    'date', now,
-                                    'url', image_url);
-
-    var post_id = redis.incr('NextPost');
-    redis.hmset('Post:'+ post_id, 'user', user_id,
-                                  'date', now,
-                                  'image', image_id);
-
-    redis.zadd('User:'+ user_id +":Posts", now, url);
-}
 
 /*
  * Start the server to handle incoming requests.
